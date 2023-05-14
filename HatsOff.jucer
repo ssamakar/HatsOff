@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
 <JUCERPROJECT id="tp3KV3" name="HatsOff" projectType="audioplug" useAppConfig="0"
-              addUsingNamespaceToJuceHeader="0" jucerFormatVersion="1">
+              addUsingNamespaceToJuceHeader="0" jucerFormatVersion="1" companyName="Walnut John">
   <MAINGROUP id="knRpxT" name="HatsOff">
     <GROUP id="{AAA12122-5043-53B1-32AC-C6E8C67CC9B0}" name="Source">
       <FILE id="ogk79A" name="PluginProcessor.cpp" compile="1" resource="0"
