@@ -34,8 +34,14 @@ HatsOffAudioProcessor::HatsOffAudioProcessor()
     ratio = dynamic_cast<juce::AudioParameterChoice*>(apvts.getParameter("Ratio"));
     jassert(ratio != nullptr);
 
+    gain = dynamic_cast<juce::AudioParameterFloat*>(apvts.getParameter("Gain"));
+    jassert(release != gain);
+    
     bypassed = dynamic_cast<juce::AudioParameterBool*>(apvts.getParameter("Bypassed"));
     jassert(bypassed != nullptr);
+    
+    pause = dynamic_cast<juce::AudioParameterBool*>(apvts.getParameter("Pause"));
+    jassert(pause != nullptr);
 }
 
 HatsOffAudioProcessor::~HatsOffAudioProcessor()
@@ -173,23 +179,43 @@ void HatsOffAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce
     
     auto block = juce::dsp::AudioBlock<float>(buffer);
     auto context = juce::dsp::ProcessContextReplacing<float>(block); // should this be non-replacing?
+
     
     context.isBypassed = bypassed->get();
     
-    compressor.process(context);
+    auto dbGain = gain->get();
+    auto rawGain = juce::Decibels::decibelsToGain(dbGain);
     
-//    // This is the place where you'd normally do the guts of your plugin's
-//    // audio processing...
-//    // Make sure to reset the state if your inner loop is processing
-//    // the samples and the outer loop is handling the channels.
-//    // Alternatively, you can process the samples with the channels
-//    // interleaved by keeping the same state.
+    auto paused = pause->get();
+    
+    // This is the place where you'd normally do the guts of your plugin's
+    // audio processing...
+    // Make sure to reset the state if your inner loop is processing
+    // the samples and the outer loop is handling the channels.
+    // Alternatively, you can process the samples with the channels
+    // interleaved by keeping the same state.
 //    for (int channel = 0; channel < totalNumInputChannels; ++channel)
 //    {
 //        auto* channelData = buffer.getWritePointer (channel);
 //
-//        // ..do something to the data...
+//        for(int sample = 0; sample < block.getNumSamples(); ++sample)
+//        {
+////            channelData[sample] *= rawGain * -1.0;
+////            channelData[sample] = channelData[sample] * rawGain * -1.0;
+//
+//            if (rawGain < 1)
+//            {
+//                channelData[sample] *= -1.0;
+//            }
+//
+//            if (paused)
+//            {
+//                channelData[sample] = 1;
+//            }
+//        }
 //    }
+    
+    compressor.process(context);
 }
 
 //==============================================================================
@@ -261,7 +287,14 @@ juce::AudioProcessorValueTreeState::ParameterLayout HatsOffAudioProcessor::creat
                                                       sa,
                                                       3));
     
+    layout.add(std::make_unique<AudioParameterFloat>(ParameterID {"Gain", 1},
+                                                     "Gain",
+                                                     NormalisableRange<float>(-60, 12, 1, 1),
+                                                     1));
+    
     layout.add(std::make_unique<AudioParameterBool>(ParameterID {"Bypassed", 1}, "Bypassed", false));
+    
+    layout.add(std::make_unique<AudioParameterBool>(ParameterID {"Pause", 1}, "Pause", false));
     
     return layout;
 }

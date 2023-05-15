@@ -63,11 +63,13 @@ public:
 
 private:
     juce::dsp::Compressor<float> compressor;
+    juce::AudioParameterFloat* gain { nullptr };
     juce::AudioParameterFloat* threshold { nullptr };
     juce::AudioParameterFloat* attack { nullptr };
     juce::AudioParameterFloat* release { nullptr };
     juce::AudioParameterChoice* ratio { nullptr };
     juce::AudioParameterBool* bypassed { nullptr };
+    juce::AudioParameterBool* pause { nullptr };
     //==============================================================================
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (HatsOffAudioProcessor)
 };
