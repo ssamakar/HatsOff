@@ -166,7 +166,8 @@ bool HatsOffAudioProcessor::hasEditor() const
 
 juce::AudioProcessorEditor* HatsOffAudioProcessor::createEditor()
 {
-    return new HatsOffAudioProcessorEditor (*this);
+//    return new HatsOffAudioProcessorEditor (*this);
+    return new juce::GenericAudioProcessorEditor(*this);
 }
 
 //==============================================================================
@@ -181,6 +182,45 @@ void HatsOffAudioProcessor::setStateInformation (const void* data, int sizeInByt
 {
     // You should use this method to restore your parameters from this memory block,
     // whose contents will have been created by the getStateInformation() call.
+}
+
+juce::AudioProcessorValueTreeState::ParameterLayout HatsOffAudioProcessor::createParameterLayout()
+{
+    APVTS::ParameterLayout layout;
+    
+    using namespace juce;
+    
+    layout.add(std::make_unique<AudioParameterFloat>(ParameterID {"Threshold", 1},
+                                                     "Threshold",
+                                                     NormalisableRange<float>(-60, 12, 1, 1),
+                                                     0));
+    
+    auto attackReleaseRange = NormalisableRange<float>(5, 500, 1, 1);
+    
+    layout.add(std::make_unique<AudioParameterFloat>(ParameterID {"Attack", 1},
+                                                     "Attack",
+                                                     attackReleaseRange,
+                                                     50));
+    
+    layout.add(std::make_unique<AudioParameterFloat>(ParameterID {"Release", 1},
+                                                     "Release",
+                                                     attackReleaseRange,
+                                                     250));
+    
+    auto choices = std::vector<double>{ 1, 1.5, 2, 3, 4, 5, 6, 7, 8, 10, 15, 20, 50, 100 };
+    
+    juce::StringArray sa;
+    for (auto choice : choices)
+    {
+        sa.add( juce::String(choice, 1) );
+    }
+    
+    layout.add(std::make_unique<AudioParameterChoice>(ParameterID {"Ratio", 1},
+                                                      "Ratio",
+                                                      sa,
+                                                      3));
+    
+    return layout;
 }
 
 //==============================================================================
