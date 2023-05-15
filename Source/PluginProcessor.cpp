@@ -45,6 +45,9 @@ HatsOffAudioProcessor::HatsOffAudioProcessor()
     
     mix = dynamic_cast<juce::AudioParameterFloat*>(apvts.getParameter("Mix"));
     jassert(mix != nullptr);
+    
+    freq = dynamic_cast<juce::AudioParameterFloat*>(apvts.getParameter("Freq"));
+    jassert(freq != nullptr);
 }
 
 HatsOffAudioProcessor::~HatsOffAudioProcessor()
@@ -125,7 +128,6 @@ void HatsOffAudioProcessor::prepareToPlay (double sampleRate, int samplesPerBloc
     spec.sampleRate = sampleRate;
     
     compressor.prepare(spec);
-    
 }
 
 void HatsOffAudioProcessor::releaseResources()
@@ -179,6 +181,20 @@ void HatsOffAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce
     
     juce::dsp::AudioBlock<float> audioBlock {buffer};
     
+    constexpr auto PI = 3.14159265359f;
+    std::vector<float> dnBuffer;
+    dnBuffer.resize(buffer.getNumChannels(), 0.f);
+    const auto sign = -1.f;
+
+    auto cutoff = freq->get();
+    
+    const auto tan = std::tan(PI * cutoff / 48000);
+    const auto a1 = (tan - 1.f) / (tan + 1.f);
+    
+    
+    compressor.updateCompressorSettings();
+    compressor.process(buffer);
+    
     for (auto channel = 0; channel < audioBlock.getNumChannels(); channel++)
     {
         auto* data = audioBlock.getChannelPointer(channel);
@@ -188,7 +204,12 @@ void HatsOffAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce
             auto input = data[sample];
             float output = input * -1.0;
             
-            data[sample] = (1.0 - dryWetMix) * input + dryWetMix * output ;
+            const auto allPassFilteredSample = a1 * output + dnBuffer[channel];
+            dnBuffer[channel] = output - a1 * allPassFilteredSample;
+            
+            const auto filterOutput = 0.5f * (output + sign * allPassFilteredSample);
+            
+            data[sample] = (1.0 - dryWetMix) * input + dryWetMix * filterOutput;
         }
     }
     
@@ -198,8 +219,6 @@ void HatsOffAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce
     auto paused = pause->get();
     
     
-    compressor.updateCompressorSettings();
-    compressor.process(buffer);
     
     
 ////     This is the place where you'd normally do the guts of your plugin's
@@ -277,7 +296,7 @@ juce::AudioProcessorValueTreeState::ParameterLayout HatsOffAudioProcessor::creat
                                                      NormalisableRange<float>(-60, 12, 1, 1),
                                                      0));
     
-    auto attackReleaseRange = NormalisableRange<float>(5, 500, 1, 1);
+    auto attackReleaseRange = NormalisableRange<float>(0, 500, 1, 1);
     
     layout.add(std::make_unique<AudioParameterFloat>(ParameterID {"Attack", 1},
                                                      "Attack",
@@ -315,6 +334,11 @@ juce::AudioProcessorValueTreeState::ParameterLayout HatsOffAudioProcessor::creat
     layout.add(std::make_unique<AudioParameterFloat>(ParameterID {"Mix", 1},
                                                      "Mix",
                                                      NormalisableRange<float>(0, 100, 1, 1),
+                                                     50));
+    
+    layout.add(std::make_unique<AudioParameterFloat>(ParameterID {"Freq", 1},
+                                                     "Freq",
+                                                     NormalisableRange<float>(0, 20000, 1, 1),
                                                      50));
     
     return layout;

@@ -22,6 +22,13 @@
  8) clean up
  */
 
+/*
+ For real TODO
+ - how do we chain processes?
+ - how do I get the high pass filter to work?
+ - how do I set compressor makeup gain to 0?
+ */
+
 struct CompressorBand
 {
     juce::AudioParameterFloat* threshold { nullptr };
@@ -41,6 +48,10 @@ struct CompressorBand
         compressor.setAttack(attack->get());
         compressor.setRelease(release->get());
         compressor.setRatio(ratio->getCurrentChoiceName().getFloatValue() );
+//        compressor.setAttack(0.0);
+//        compressor.setRelease(100.0);
+//        compressor.setThreshold(-60.0);
+//        compressor.setRatio(100.0);
     }
     
     void process(juce::AudioBuffer<float>& buffer)
@@ -108,8 +119,6 @@ public:
     APVTS apvts { *this, nullptr, "Parameters", createParameterLayout() };
 
 private:
-    using Filter = juce::dsp::IIR::Filter<float>;
-    
 //    juce::dsp::Compressor<float> compressor;
     juce::AudioParameterFloat* gain { nullptr };
 //    juce::AudioParameterFloat* threshold { nullptr };
@@ -120,6 +129,8 @@ private:
     juce::AudioParameterBool* pause { nullptr };
     
     juce::AudioParameterFloat* mix { nullptr };
+    
+    juce::AudioParameterFloat* freq { nullptr };
     
     CompressorBand compressor;
     //==============================================================================
