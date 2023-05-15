@@ -34,6 +34,8 @@ HatsOffAudioProcessor::HatsOffAudioProcessor()
     ratio = dynamic_cast<juce::AudioParameterChoice*>(apvts.getParameter("Ratio"));
     jassert(ratio != nullptr);
 
+    bypassed = dynamic_cast<juce::AudioParameterBool*>(apvts.getParameter("Bypassed"));
+    jassert(bypassed != nullptr);
 }
 
 HatsOffAudioProcessor::~HatsOffAudioProcessor()
@@ -172,6 +174,8 @@ void HatsOffAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce
     auto block = juce::dsp::AudioBlock<float>(buffer);
     auto context = juce::dsp::ProcessContextReplacing<float>(block); // should this be non-replacing?
     
+    context.isBypassed = bypassed->get();
+    
     compressor.process(context);
     
 //    // This is the place where you'd normally do the guts of your plugin's
@@ -256,6 +260,8 @@ juce::AudioProcessorValueTreeState::ParameterLayout HatsOffAudioProcessor::creat
                                                       "Ratio",
                                                       sa,
                                                       3));
+    
+    layout.add(std::make_unique<AudioParameterBool>(ParameterID {"Bypassed", 1}, "Bypassed", false));
     
     return layout;
 }
