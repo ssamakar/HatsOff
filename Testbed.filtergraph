@@ -62,13 +62,13 @@
     </LAYOUT>
   </FILTER>
   <FILTER uid="5" x="0.50375" y="0.6153846153846154" useARA="0" uiLastX_Normal="266"
-          uiLastY_Normal="356" uiopen_Normal="0">
+          uiLastY_Normal="356" uiopen_Normal="1">
     <PLUGIN name="HatsOff" format="VST3" category="Fx" manufacturer="Walnut John"
             version="1.0.0" file="/Users/saba/Library/Audio/Plug-Ins/VST3/HatsOff.vst3"
-            uniqueId="1a4a520" isInstrument="0" fileTime="1881c9749f5" infoUpdateTime="1881c9fd50e"
+            uniqueId="1a4a520" isInstrument="0" fileTime="1881c9749f5" infoUpdateTime="1881cb9c2e5"
             numInputs="2" numOutputs="2" isShell="0" hasARAExtension="0"
             uid="acfbfb25"/>
-    <STATE>191.VMjLgXK....O+fWarAhckI2bo8la8HRLt.iHfTlai8FYo41Y8HRUTYTK3HxO9.BOVMEUy.Ea0cVZtMEcgQWY9vSRC8Vav8lak4Fc9XCLt3hKt3hKt3hKt3hYRUUSTEETIckVwTjQisVTTgkdEYjKAQjYPQSPWgUdMcjKAQjct3hdA4hKt3hKt3hKtnTUv.UQAslXuk0UXoWUFE0YQcEV77RRC8Vav8lak4Fc9vyKVMEUy.Ea0cVZtMEcgQWY9..</STATE>
+    <STATE>423.VMjLg3Y....O+fWarAhckI2bo8la8HRLt.iHfTlai8FYo41Y8HRUTYTK3HxO9.BOVMEUy.Ea0cVZtMEcgQWY9vSRC8Vav8lak4Fc9HyLy3BTEwlXmAiUYoWUrIVdA4hKAAkKTETRUAUSAAkKBolQY4BQtHTQDQzX5UTLXEWPlM1Y2Y0XqEDTtjDTt3hKt3hKt3BTR4RPtPUPIUETMEDTtHjZFkkKDYWPEgTUXo2ZwDlKXcEVxU0UY4BQPIDQt3hKt3hKt3hKAAkKtTETRUDUS4BQl4xaQYjKAoFTAIUUFE1ZEEiXqEjYic1cVM1ZAAkKIAkKt3hKt3hKtnWXtDjKTETRUAUSAAkKBolQY4BQ1ITQPUjV3UULh4FNFElZAY1XmcmUisVPP4RRP4hKt3hKt3hKt3hKt3hKt3hKt3hKt3hKtQUUCUEQTg2ZrM1YQcUVDUjQicVPP4RPHQEY1UTLhkWPP4RPL4hKi4hKt3hKt3hKtXlTU0DUQAURWoULEYzXqEEUXoWQFwyKIMzasA2atUlaz4COuX0TTMCTrU2Yo41TzEFck4C.</STATE>
     <LAYOUT>
       <INPUTS>
         <BUS index="0" layout="L R"/>
