@@ -22,6 +22,18 @@ HatsOffAudioProcessor::HatsOffAudioProcessor()
                        )
 #endif
 {
+    threshold = dynamic_cast<juce::AudioParameterFloat*>(apvts.getParameter("Threshold"));
+    jassert(threshold != nullptr);
+
+    attack = dynamic_cast<juce::AudioParameterFloat*>(apvts.getParameter("Attack"));
+    jassert(attack != nullptr);
+
+    release = dynamic_cast<juce::AudioParameterFloat*>(apvts.getParameter("Release"));
+    jassert(release != nullptr);
+    
+    ratio = dynamic_cast<juce::AudioParameterChoice*>(apvts.getParameter("Ratio"));
+    jassert(ratio != nullptr);
+
 }
 
 HatsOffAudioProcessor::~HatsOffAudioProcessor()
@@ -95,6 +107,14 @@ void HatsOffAudioProcessor::prepareToPlay (double sampleRate, int samplesPerBloc
 {
     // Use this method as the place to do any pre-playback
     // initialisation that you need..
+    
+    juce::dsp::ProcessSpec spec;
+    spec.maximumBlockSize = samplesPerBlock;
+    spec.numChannels = getTotalNumOutputChannels();
+    spec.sampleRate = sampleRate;
+    
+    compressor.prepare(spec);
+    
 }
 
 void HatsOffAudioProcessor::releaseResources()
@@ -143,19 +163,29 @@ void HatsOffAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce
     // this code if your algorithm always overwrites all the output channels.
     for (auto i = totalNumInputChannels; i < totalNumOutputChannels; ++i)
         buffer.clear (i, 0, buffer.getNumSamples());
-
-    // This is the place where you'd normally do the guts of your plugin's
-    // audio processing...
-    // Make sure to reset the state if your inner loop is processing
-    // the samples and the outer loop is handling the channels.
-    // Alternatively, you can process the samples with the channels
-    // interleaved by keeping the same state.
-    for (int channel = 0; channel < totalNumInputChannels; ++channel)
-    {
-        auto* channelData = buffer.getWritePointer (channel);
-
-        // ..do something to the data...
-    }
+    
+    compressor.setThreshold(threshold->get());
+    compressor.setAttack(attack->get());
+    compressor.setRelease(release->get());
+    compressor.setRatio(ratio->getCurrentChoiceName().getFloatValue() );
+    
+    auto block = juce::dsp::AudioBlock<float>(buffer);
+    auto context = juce::dsp::ProcessContextReplacing<float>(block); // should this be non-replacing?
+    
+    compressor.process(context);
+    
+//    // This is the place where you'd normally do the guts of your plugin's
+//    // audio processing...
+//    // Make sure to reset the state if your inner loop is processing
+//    // the samples and the outer loop is handling the channels.
+//    // Alternatively, you can process the samples with the channels
+//    // interleaved by keeping the same state.
+//    for (int channel = 0; channel < totalNumInputChannels; ++channel)
+//    {
+//        auto* channelData = buffer.getWritePointer (channel);
+//
+//        // ..do something to the data...
+//    }
 }
 
 //==============================================================================
