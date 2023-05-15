@@ -22,23 +22,23 @@ HatsOffAudioProcessor::HatsOffAudioProcessor()
                        )
 #endif
 {
-    threshold = dynamic_cast<juce::AudioParameterFloat*>(apvts.getParameter("Threshold"));
-    jassert(threshold != nullptr);
+    compressor.threshold = dynamic_cast<juce::AudioParameterFloat*>(apvts.getParameter("Threshold"));
+    jassert(compressor.threshold != nullptr);
 
-    attack = dynamic_cast<juce::AudioParameterFloat*>(apvts.getParameter("Attack"));
-    jassert(attack != nullptr);
+    compressor.attack = dynamic_cast<juce::AudioParameterFloat*>(apvts.getParameter("Attack"));
+    jassert(compressor.attack != nullptr);
 
-    release = dynamic_cast<juce::AudioParameterFloat*>(apvts.getParameter("Release"));
-    jassert(release != nullptr);
+    compressor.release = dynamic_cast<juce::AudioParameterFloat*>(apvts.getParameter("Release"));
+    jassert(compressor.release != nullptr);
     
-    ratio = dynamic_cast<juce::AudioParameterChoice*>(apvts.getParameter("Ratio"));
-    jassert(ratio != nullptr);
+    compressor.ratio = dynamic_cast<juce::AudioParameterChoice*>(apvts.getParameter("Ratio"));
+    jassert(compressor.ratio != nullptr);
+
+    compressor.bypassed = dynamic_cast<juce::AudioParameterBool*>(apvts.getParameter("Bypassed"));
+    jassert(compressor.bypassed != nullptr);
 
     gain = dynamic_cast<juce::AudioParameterFloat*>(apvts.getParameter("Gain"));
-    jassert(release != gain);
-    
-    bypassed = dynamic_cast<juce::AudioParameterBool*>(apvts.getParameter("Bypassed"));
-    jassert(bypassed != nullptr);
+    jassert(gain != nullptr);
     
     pause = dynamic_cast<juce::AudioParameterBool*>(apvts.getParameter("Pause"));
     jassert(pause != nullptr);
@@ -171,17 +171,8 @@ void HatsOffAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce
     // this code if your algorithm always overwrites all the output channels.
     for (auto i = totalNumInputChannels; i < totalNumOutputChannels; ++i)
         buffer.clear (i, 0, buffer.getNumSamples());
+     
     
-    compressor.setThreshold(threshold->get());
-    compressor.setAttack(attack->get());
-    compressor.setRelease(release->get());
-    compressor.setRatio(ratio->getCurrentChoiceName().getFloatValue() );
-    
-    auto block = juce::dsp::AudioBlock<float>(buffer);
-    auto context = juce::dsp::ProcessContextReplacing<float>(block); // should this be non-replacing?
-
-    
-    context.isBypassed = bypassed->get();
     
     auto dbGain = gain->get();
     auto rawGain = juce::Decibels::decibelsToGain(dbGain);
@@ -215,7 +206,8 @@ void HatsOffAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce
 //        }
 //    }
     
-    compressor.process(context);
+    compressor.updateCompressorSettings();
+    compressor.process(buffer);
 }
 
 //==============================================================================
@@ -287,12 +279,13 @@ juce::AudioProcessorValueTreeState::ParameterLayout HatsOffAudioProcessor::creat
                                                       sa,
                                                       3));
     
+    layout.add(std::make_unique<AudioParameterBool>(ParameterID {"Bypassed", 1}, "Bypassed", false));
+    
+    
     layout.add(std::make_unique<AudioParameterFloat>(ParameterID {"Gain", 1},
                                                      "Gain",
                                                      NormalisableRange<float>(-60, 12, 1, 1),
                                                      1));
-    
-    layout.add(std::make_unique<AudioParameterBool>(ParameterID {"Bypassed", 1}, "Bypassed", false));
     
     layout.add(std::make_unique<AudioParameterBool>(ParameterID {"Pause", 1}, "Pause", false));
     

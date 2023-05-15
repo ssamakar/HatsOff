@@ -8,14 +8,14 @@
          BreakpointExtensionID = "Xcode.Breakpoint.FileBreakpoint">
          <BreakpointContent
             uuid = "288AD747-7E48-471E-B882-78A312AAA889"
-            shouldBeEnabled = "Yes"
+            shouldBeEnabled = "No"
             ignoreCount = "0"
             continueAfterRunningActions = "No"
             filePath = "../../Source/PluginProcessor.cpp"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "213"
-            endingLineNumber = "213"
+            startingLineNumber = "204"
+            endingLineNumber = "204"
             landmarkName = "HatsOffAudioProcessor::processBlock(buffer, midiMessages)"
             landmarkType = "7">
             <Locations>
@@ -48,6 +48,21 @@
                   startingLineNumber = "212"
                   endingLineNumber = "212"
                   offsetFromSymbolStart = "668">
+               </Location>
+               <Location
+                  uuid = "288AD747-7E48-471E-B882-78A312AAA889 - fa638ce85c5f6e0b"
+                  shouldBeEnabled = "Yes"
+                  ignoreCount = "0"
+                  continueAfterRunningActions = "No"
+                  symbolName = "HatsOffAudioProcessor::processBlock(juce::AudioBuffer&lt;float&gt;&amp;, juce::MidiBuffer&amp;)"
+                  moduleName = "HatsOff"
+                  usesParentBreakpointCondition = "Yes"
+                  urlString = "file:///Users/saba/Code/HatsOff/Source/PluginProcessor.cpp"
+                  startingColumnNumber = "9223372036854775807"
+                  endingColumnNumber = "9223372036854775807"
+                  startingLineNumber = "209"
+                  endingLineNumber = "209"
+                  offsetFromSymbolStart = "240">
                </Location>
             </Locations>
          </BreakpointContent>
