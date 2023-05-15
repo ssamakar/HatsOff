@@ -10,6 +10,18 @@
 
 #include <JuceHeader.h>
 
+/*
+ Roadmap
+ 1) figure out how to split the audio into 3 bands
+ 2) create parameters to control where this split happens
+ 3) prove that splitting into 3 bands produces no audible artifacts
+ 4) create audio parameters for the 3 compressor bands
+ 5) add two remaining compressors
+ 6) add ability to mute/solo/bypass individual compressors
+ 7) add input and output gain
+ 8) clean up
+ */
+
 struct CompressorBand
 {
     juce::AudioParameterFloat* threshold { nullptr };
@@ -96,6 +108,8 @@ public:
     APVTS apvts { *this, nullptr, "Parameters", createParameterLayout() };
 
 private:
+    using Filter = juce::dsp::IIR::Filter<float>;
+    
 //    juce::dsp::Compressor<float> compressor;
     juce::AudioParameterFloat* gain { nullptr };
 //    juce::AudioParameterFloat* threshold { nullptr };
@@ -104,6 +118,8 @@ private:
 //    juce::AudioParameterChoice* ratio { nullptr };
 //    juce::AudioParameterBool* bypassed { nullptr };
     juce::AudioParameterBool* pause { nullptr };
+    
+    juce::AudioParameterFloat* mix { nullptr };
     
     CompressorBand compressor;
     //==============================================================================

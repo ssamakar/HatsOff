@@ -42,6 +42,9 @@ HatsOffAudioProcessor::HatsOffAudioProcessor()
     
     pause = dynamic_cast<juce::AudioParameterBool*>(apvts.getParameter("Pause"));
     jassert(pause != nullptr);
+    
+    mix = dynamic_cast<juce::AudioParameterFloat*>(apvts.getParameter("Mix"));
+    jassert(mix != nullptr);
 }
 
 HatsOffAudioProcessor::~HatsOffAudioProcessor()
@@ -162,7 +165,7 @@ void HatsOffAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce
     juce::ScopedNoDenormals noDenormals;
     auto totalNumInputChannels  = getTotalNumInputChannels();
     auto totalNumOutputChannels = getTotalNumOutputChannels();
-
+    
     // In case we have more outputs than inputs, this code clears any output
     // channels that didn't contain input data, (because these aren't
     // guaranteed to be empty - they may contain garbage).
@@ -171,20 +174,40 @@ void HatsOffAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce
     // this code if your algorithm always overwrites all the output channels.
     for (auto i = totalNumInputChannels; i < totalNumOutputChannels; ++i)
         buffer.clear (i, 0, buffer.getNumSamples());
-     
     
+    auto dryWetMix = juce::jmap(mix->get(), 0.0f, 100.0f, 0.0f, 1.0f);
+    
+    juce::dsp::AudioBlock<float> audioBlock {buffer};
+    
+    for (auto channel = 0; channel < audioBlock.getNumChannels(); channel++)
+    {
+        auto* data = audioBlock.getChannelPointer(channel);
+        
+        for (auto sample = 0; sample < audioBlock.getNumSamples(); sample++)
+        {
+            auto input = data[sample];
+            float output = input * -1.0;
+            
+            data[sample] = (1.0 - dryWetMix) * input + dryWetMix * output ;
+        }
+    }
     
     auto dbGain = gain->get();
     auto rawGain = juce::Decibels::decibelsToGain(dbGain);
     
     auto paused = pause->get();
     
-    // This is the place where you'd normally do the guts of your plugin's
-    // audio processing...
-    // Make sure to reset the state if your inner loop is processing
-    // the samples and the outer loop is handling the channels.
-    // Alternatively, you can process the samples with the channels
-    // interleaved by keeping the same state.
+    
+    compressor.updateCompressorSettings();
+    compressor.process(buffer);
+    
+    
+////     This is the place where you'd normally do the guts of your plugin's
+////     audio processing...
+////     Make sure to reset the state if your inner loop is processing
+////     the samples and the outer loop is handling the channels.
+////     Alternatively, you can process the samples with the channels
+////     interleaved by keeping the same state.
 //    for (int channel = 0; channel < totalNumInputChannels; ++channel)
 //    {
 //        auto* channelData = buffer.getWritePointer (channel);
@@ -206,8 +229,8 @@ void HatsOffAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce
 //        }
 //    }
     
-    compressor.updateCompressorSettings();
-    compressor.process(buffer);
+//    compressor.updateCompressorSettings();
+//    compressor.process(buffer);
 }
 
 //==============================================================================
@@ -288,6 +311,11 @@ juce::AudioProcessorValueTreeState::ParameterLayout HatsOffAudioProcessor::creat
                                                      1));
     
     layout.add(std::make_unique<AudioParameterBool>(ParameterID {"Pause", 1}, "Pause", false));
+    
+    layout.add(std::make_unique<AudioParameterFloat>(ParameterID {"Mix", 1},
+                                                     "Mix",
+                                                     NormalisableRange<float>(0, 100, 1, 1),
+                                                     50));
     
     return layout;
 }
