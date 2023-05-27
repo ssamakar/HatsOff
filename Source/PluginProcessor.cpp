@@ -202,7 +202,10 @@ void HatsOffAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce
         for (auto sample = 0; sample < audioBlock.getNumSamples(); sample++)
         {
             auto input = data[sample];
-            float output = input * -1.0;
+            float output = input * -1.0; // flip polarity
+            
+            // compress the signal here
+
             
             const auto allPassFilteredSample = a1 * output + dnBuffer[channel];
             dnBuffer[channel] = output - a1 * allPassFilteredSample;

@@ -25,6 +25,9 @@
 /*
  For real TODO
  - how do we chain processes?
+    - use ProcessorChain - AudioProcessGraph has a high overhead due to dynamic order
+    https://forum.juce.com/t/processors-chain-or-audioprocessorgraph/37022
+    https://forum.juce.com/t/advantages-of-dsp-processorchain-vs-audioprocessorgraph/51445
  - how do I get the high pass filter to work?
  - how do I set compressor makeup gain to 0?
  */
