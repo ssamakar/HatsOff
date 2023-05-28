@@ -22,27 +22,9 @@ HatsOffAudioProcessor::HatsOffAudioProcessor()
                        )
 #endif
 {
-    compressor.threshold = dynamic_cast<juce::AudioParameterFloat*>(apvts.getParameter("Threshold"));
-    jassert(compressor.threshold != nullptr);
-
-    compressor.attack = dynamic_cast<juce::AudioParameterFloat*>(apvts.getParameter("Attack"));
-    jassert(compressor.attack != nullptr);
-
-    compressor.release = dynamic_cast<juce::AudioParameterFloat*>(apvts.getParameter("Release"));
-    jassert(compressor.release != nullptr);
-    
-    compressor.ratio = dynamic_cast<juce::AudioParameterChoice*>(apvts.getParameter("Ratio"));
-    jassert(compressor.ratio != nullptr);
-
-    compressor.bypassed = dynamic_cast<juce::AudioParameterBool*>(apvts.getParameter("Bypassed"));
-    jassert(compressor.bypassed != nullptr);
-
-    gain = dynamic_cast<juce::AudioParameterFloat*>(apvts.getParameter("Gain"));
-    jassert(gain != nullptr);
-    
-    pause = dynamic_cast<juce::AudioParameterBool*>(apvts.getParameter("Pause"));
-    jassert(pause != nullptr);
-    
+    release = dynamic_cast<juce::AudioParameterFloat*>(apvts.getParameter("Release"));
+    jassert(release != nullptr);
+ 
     mix = dynamic_cast<juce::AudioParameterFloat*>(apvts.getParameter("Mix"));
     jassert(mix != nullptr);
     
@@ -127,7 +109,7 @@ void HatsOffAudioProcessor::prepareToPlay (double sampleRate, int samplesPerBloc
     spec.numChannels = getTotalNumOutputChannels();
     spec.sampleRate = sampleRate;
     
-    compressor.prepare(spec);
+    // should we prepare(spec); here?
 }
 
 void HatsOffAudioProcessor::releaseResources()
@@ -168,12 +150,6 @@ void HatsOffAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce
     auto totalNumInputChannels  = getTotalNumInputChannels();
     auto totalNumOutputChannels = getTotalNumOutputChannels();
     
-    // In case we have more outputs than inputs, this code clears any output
-    // channels that didn't contain input data, (because these aren't
-    // guaranteed to be empty - they may contain garbage).
-    // This is here to avoid people getting screaming feedback
-    // when they first compile a plugin, but obviously you don't need to keep
-    // this code if your algorithm always overwrites all the output channels.
     for (auto i = totalNumInputChannels; i < totalNumOutputChannels; ++i)
         buffer.clear (i, 0, buffer.getNumSamples());
     
@@ -188,12 +164,8 @@ void HatsOffAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce
 
     auto cutoff = freq->get();
     
-    const auto tan = std::tan(PI * cutoff / 48000); // get sample rate dynamically
+    const auto tan = std::tan(PI * cutoff / 48000); // TODO: get sample rate dynamically
     const auto a1 = (tan - 1.f) / (tan + 1.f);
-    
-    
-    compressor.updateCompressorSettings();
-    compressor.process(buffer);
     
     for (auto channel = 0; channel < audioBlock.getNumChannels(); channel++)
     {
@@ -202,66 +174,28 @@ void HatsOffAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce
         for (auto sample = 0; sample < audioBlock.getNumSamples(); sample++)
         {
             auto input = data[sample];
-            float output = input * -1.0; // flip polarity
             
-            // compress the signal here
+            // flip polarity
+            float output = input * -1.0;
+            
+            // compress hard
             output = compressSample(output);
             
+            // high pass filter
             const auto allPassFilteredSample = a1 * output + dnBuffer[channel];
             dnBuffer[channel] = output - a1 * allPassFilteredSample;
-            
             const auto filterOutput = 0.5f * (output + sign * allPassFilteredSample);
             
+            // blend
             data[sample] = (1.0 - dryWetMix) * input + dryWetMix * filterOutput;
         }
     }
-    
-    auto dbGain = gain->get();
-    auto rawGain = juce::Decibels::decibelsToGain(dbGain);
-    
-    auto paused = pause->get();
-    
-    
-    
-    
-////     This is the place where you'd normally do the guts of your plugin's
-////     audio processing...
-////     Make sure to reset the state if your inner loop is processing
-////     the samples and the outer loop is handling the channels.
-////     Alternatively, you can process the samples with the channels
-////     interleaved by keeping the same state.
-//    for (int channel = 0; channel < totalNumInputChannels; ++channel)
-//    {
-//        auto* channelData = buffer.getWritePointer (channel);
-//
-//        for(int sample = 0; sample < block.getNumSamples(); ++sample)
-//        {
-////            channelData[sample] *= rawGain * -1.0;
-////            channelData[sample] = channelData[sample] * rawGain * -1.0;
-//
-//            if (rawGain < 1)
-//            {
-//                channelData[sample] *= -1.0;
-//            }
-//
-//            if (paused)
-//            {
-//                channelData[sample] = 1;
-//            }
-//        }
-//    }
-    
-//    compressor.updateCompressorSettings();
-//    compressor.process(buffer);
 }
 
 float HatsOffAudioProcessor::compressSample (float input) {
     float _samplerate = 48000;
-    /* Initialise separate attack/release times*/
-//    auto alphaAttack = std::exp((std::log(9) * -1.0) / (_samplerate * _attack));
-    auto alphaAttack = std::exp((std::log(9) * -1.0) / (_samplerate * 0)); // immediate attack
-//    auto alphaRelease = std::exp((std::log(9) * -1.0) / (_samplerate * _release));
-    auto alphaRelease = std::exp((std::log(9) * -1.0) / (_samplerate * 0.100f));
+    auto releaseTime = release->get();
+    auto alphaRelease = std::exp((std::log(9) * -1.0) / (_samplerate * (releaseTime / 1000)));
 
     const auto x = input;
 
@@ -273,10 +207,9 @@ float HatsOffAudioProcessor::compressSample (float input) {
         x_dB = -96.0;
     }
 
-//    if (x_dB > _thresh )
-    if (x_dB > -50.0f ) // high threshold
+    if (x_dB > thresh )
     {
-        gainSC = -50.0f  + (x_dB - -50.0f ) / -30.0f ;
+        gainSC = thresh + (x_dB - thresh ) / ratio ;
     }
 
     else
@@ -288,7 +221,7 @@ float HatsOffAudioProcessor::compressSample (float input) {
 
     if (gainChange_dB < gainSmoothPrevious)
     {
-        gainSmooth = ((1 - alphaAttack) * gainChange_dB) + (alphaAttack * gainSmoothPrevious);
+        gainSmooth = gainChange_dB;
         currentSignal = gainSmooth;
     }
 
@@ -300,11 +233,8 @@ float HatsOffAudioProcessor::compressSample (float input) {
 
     gainSmoothPrevious = gainSmooth;
 
-    auto mix = (1.0 - .5) * x + (x * juce::Decibels::decibelsToGain(gainSmooth)) * .5;
-//    auto mix = (1.0 - _mix.getNextValue()) * x + (x * juce::Decibels::decibelsToGain(gainSmooth)) * _mix.getNextValue();
-
-    return mix;
-//    return sample;
+    auto compressedSample = x * juce::Decibels::decibelsToGain(gainSmooth);
+    return compressedSample;
 }
 
 //==============================================================================
@@ -346,53 +276,22 @@ juce::AudioProcessorValueTreeState::ParameterLayout HatsOffAudioProcessor::creat
     
     using namespace juce;
     
-    layout.add(std::make_unique<AudioParameterFloat>(ParameterID {"Threshold", 1},
-                                                     "Threshold",
-                                                     NormalisableRange<float>(-60, 12, 1, 1),
-                                                     0));
+    layout.add(std::make_unique<AudioParameterBool>(ParameterID {"Bypassed", 1}, "Bypassed", false));
     
-    auto attackReleaseRange = NormalisableRange<float>(0, 500, 1, 1);
-    
-    layout.add(std::make_unique<AudioParameterFloat>(ParameterID {"Attack", 1},
-                                                     "Attack",
-                                                     attackReleaseRange,
-                                                     50));
+    auto releaseRange = NormalisableRange<float>(0, 500, 1, 1);
     
     layout.add(std::make_unique<AudioParameterFloat>(ParameterID {"Release", 1},
                                                      "Release",
-                                                     attackReleaseRange,
+                                                     releaseRange,
                                                      250));
-    
-    auto choices = std::vector<double>{ 1, 1.5, 2, 3, 4, 5, 6, 7, 8, 10, 15, 20, 50, 100 };
-    
-    juce::StringArray sa;
-    for (auto choice : choices)
-    {
-        sa.add( juce::String(choice, 1) );
-    }
-    
-    layout.add(std::make_unique<AudioParameterChoice>(ParameterID {"Ratio", 1},
-                                                      "Ratio",
-                                                      sa,
-                                                      3));
-    
-    layout.add(std::make_unique<AudioParameterBool>(ParameterID {"Bypassed", 1}, "Bypassed", false));
-    
-    
-    layout.add(std::make_unique<AudioParameterFloat>(ParameterID {"Gain", 1},
-                                                     "Gain",
-                                                     NormalisableRange<float>(-60, 12, 1, 1),
-                                                     1));
-    
-    layout.add(std::make_unique<AudioParameterBool>(ParameterID {"Pause", 1}, "Pause", false));
-    
+
     layout.add(std::make_unique<AudioParameterFloat>(ParameterID {"Mix", 1},
                                                      "Mix",
                                                      NormalisableRange<float>(0, 100, 1, 1),
                                                      50));
     
     layout.add(std::make_unique<AudioParameterFloat>(ParameterID {"Freq", 1},
-                                                     "Freq",
+                                                     "LPF (hz)",
                                                      NormalisableRange<float>(0, 20000, 1, 1),
                                                      50));
     

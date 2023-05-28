@@ -9,66 +9,34 @@
 #pragma once
 
 #include <JuceHeader.h>
-
-/*
- Roadmap
- 1) figure out how to split the audio into 3 bands
- 2) create parameters to control where this split happens
- 3) prove that splitting into 3 bands produces no audible artifacts
- 4) create audio parameters for the 3 compressor bands
- 5) add two remaining compressors
- 6) add ability to mute/solo/bypass individual compressors
- 7) add input and output gain
- 8) clean up
- */
-
-/*
- For real TODO
- - how do we chain processes?
-    - use ProcessorChain - AudioProcessGraph has a high overhead due to dynamic order
-    https://forum.juce.com/t/processors-chain-or-audioprocessorgraph/37022
-    https://forum.juce.com/t/advantages-of-dsp-processorchain-vs-audioprocessorgraph/51445
- - how do I get the high pass filter to work?
- - how do I set compressor makeup gain to 0?
- */
-
-struct CompressorBand
-{
-    juce::AudioParameterFloat* threshold { nullptr };
-    juce::AudioParameterFloat* attack { nullptr };
-    juce::AudioParameterFloat* release { nullptr };
-    juce::AudioParameterChoice* ratio { nullptr };
-    juce::AudioParameterBool* bypassed { nullptr };
-    
-    void prepare(juce::dsp::ProcessSpec& spec)
-    {
-        compressor.prepare(spec);
-    }
-    
-    void updateCompressorSettings()
-    {
-        compressor.setThreshold(threshold->get());
-        compressor.setAttack(attack->get());
-        compressor.setRelease(release->get());
-        compressor.setRatio(ratio->getCurrentChoiceName().getFloatValue() );
-//        compressor.setAttack(0.0);
-//        compressor.setRelease(100.0);
-//        compressor.setThreshold(-60.0);
-//        compressor.setRatio(100.0);
-    }
-    
-    void process(juce::AudioBuffer<float>& buffer)
-    {
-        auto block = juce::dsp::AudioBlock<float>(buffer);
-        auto context = juce::dsp::ProcessContextReplacing<float>(block); // should this be non-replacing?
-        
-        context.isBypassed = bypassed->get();
-        compressor.process(context);
-    }
-private:
-    juce::dsp::Compressor<float> compressor;
-    
-};
+//
+//struct CompressorBand
+//{
+//    juce::AudioParameterFloat* release { nullptr };
+//    juce::AudioParameterBool* bypassed { nullptr };
+//    
+//    void prepare(juce::dsp::ProcessSpec& spec)
+//    {
+//        compressor.prepare(spec);
+//    }
+//    
+//    void updateCompressorSettings()
+//    {
+//        compressor.setRelease(release->get());
+//    }
+//    
+//    void process(juce::AudioBuffer<float>& buffer)
+//    {
+//        auto block = juce::dsp::AudioBlock<float>(buffer);
+//        auto context = juce::dsp::ProcessContextReplacing<float>(block); // should this be non-replacing?
+//        
+//        context.isBypassed = bypassed->get();
+//        compressor.process(context);
+//    }
+//private:
+//    juce::dsp::Compressor<float> compressor;
+//    
+//};
 
 //==============================================================================
 /**
@@ -123,28 +91,21 @@ public:
     APVTS apvts { *this, nullptr, "Parameters", createParameterLayout() };
 
 private:
-//    juce::dsp::Compressor<float> compressor;
-    juce::AudioParameterFloat* gain { nullptr };
-//    juce::AudioParameterFloat* threshold { nullptr };
-//    juce::AudioParameterFloat* attack { nullptr };
-//    juce::AudioParameterFloat* release { nullptr };
-//    juce::AudioParameterChoice* ratio { nullptr };
-//    juce::AudioParameterBool* bypassed { nullptr };
-    juce::AudioParameterBool* pause { nullptr };
-    
     juce::AudioParameterFloat* mix { nullptr };
     
     juce::AudioParameterFloat* freq { nullptr };
+    juce::AudioParameterFloat* release { nullptr };
 
     juce::SmoothedValue<float> _mix;
 
+    float thresh = -50.0f;
+    float ratio = 30.0f;
     float gainSC = 0.0f;
     float gainSmooth = 0.0f;
     float gainSmoothPrevious = 0.0f;
     float currentSignal = 0.0f;
     float gainChange_dB = 0.0f;
     
-    CompressorBand compressor;
     //==============================================================================
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (HatsOffAudioProcessor)
 };
