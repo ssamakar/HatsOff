@@ -14,28 +14,28 @@
 //{
 //    juce::AudioParameterFloat* release { nullptr };
 //    juce::AudioParameterBool* bypassed { nullptr };
-//    
+//
 //    void prepare(juce::dsp::ProcessSpec& spec)
 //    {
 //        compressor.prepare(spec);
 //    }
-//    
+//
 //    void updateCompressorSettings()
 //    {
 //        compressor.setRelease(release->get());
 //    }
-//    
+//
 //    void process(juce::AudioBuffer<float>& buffer)
 //    {
 //        auto block = juce::dsp::AudioBlock<float>(buffer);
 //        auto context = juce::dsp::ProcessContextReplacing<float>(block); // should this be non-replacing?
-//        
+//
 //        context.isBypassed = bypassed->get();
 //        compressor.process(context);
 //    }
 //private:
 //    juce::dsp::Compressor<float> compressor;
-//    
+//
 //};
 
 //==============================================================================
@@ -105,6 +105,8 @@ private:
     float gainSmoothPrevious = 0.0f;
     float currentSignal = 0.0f;
     float gainChange_dB = 0.0f;
+    float sampleRate = getSampleRate();
+    float pi = 3.14159265359f;
     
     //==============================================================================
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (HatsOffAudioProcessor)

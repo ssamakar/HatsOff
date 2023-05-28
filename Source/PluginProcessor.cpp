@@ -107,7 +107,7 @@ void HatsOffAudioProcessor::prepareToPlay (double sampleRate, int samplesPerBloc
     juce::dsp::ProcessSpec spec;
     spec.maximumBlockSize = samplesPerBlock;
     spec.numChannels = getTotalNumOutputChannels();
-    spec.sampleRate = sampleRate;
+//    spec.sampleRate = sampleRate;
     
     // should we prepare(spec); here?
 }
@@ -154,17 +154,18 @@ void HatsOffAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce
         buffer.clear (i, 0, buffer.getNumSamples());
     
     auto dryWetMix = juce::jmap(mix->get(), 0.0f, 100.0f, 0.0f, 1.0f);
+
     
     juce::dsp::AudioBlock<float> audioBlock {buffer};
     
-    constexpr auto PI = 3.14159265359f;
     std::vector<float> dnBuffer;
     dnBuffer.resize(buffer.getNumChannels(), 0.f);
     const auto sign = -1.f;
 
     auto cutoff = freq->get();
+    auto sampleRate = getSampleRate();
     
-    const auto tan = std::tan(PI * cutoff / 48000); // TODO: get sample rate dynamically
+    const auto tan = std::tan(pi * cutoff / sampleRate); // TODO: get sample rate dynamically
     const auto a1 = (tan - 1.f) / (tan + 1.f);
     
     for (auto channel = 0; channel < audioBlock.getNumChannels(); channel++)
@@ -176,16 +177,16 @@ void HatsOffAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce
             auto input = data[sample];
             
             // flip polarity
-            float output = input * -1.0;
+            float invertedSample = input * -1.0;
             
             // compress hard
-            output = compressSample(output);
+            auto compressedSample = compressSample(invertedSample);
             
             // high pass filter
-            const auto allPassFilteredSample = a1 * output + dnBuffer[channel];
-            dnBuffer[channel] = output - a1 * allPassFilteredSample;
-            const auto filterOutput = 0.5f * (output + sign * allPassFilteredSample);
-            
+            const auto allPassFilteredSample = a1 * compressedSample + dnBuffer[channel];
+            dnBuffer[channel] = compressedSample - a1 * allPassFilteredSample;
+            const auto filterOutput = 0.5f * (compressedSample + sign * allPassFilteredSample);
+
             // blend
             data[sample] = (1.0 - dryWetMix) * input + dryWetMix * filterOutput;
         }
@@ -193,9 +194,8 @@ void HatsOffAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce
 }
 
 float HatsOffAudioProcessor::compressSample (float input) {
-    float _samplerate = 48000;
     auto releaseTime = release->get();
-    auto alphaRelease = std::exp((std::log(9) * -1.0) / (_samplerate * (releaseTime / 1000)));
+    auto alphaRelease = std::exp((std::log(9) * -1.0) / (sampleRate * (releaseTime / 1000)));
 
     const auto x = input;
 
@@ -278,7 +278,7 @@ juce::AudioProcessorValueTreeState::ParameterLayout HatsOffAudioProcessor::creat
     
     layout.add(std::make_unique<AudioParameterBool>(ParameterID {"Bypassed", 1}, "Bypassed", false));
     
-    auto releaseRange = NormalisableRange<float>(0, 500, 1, 1);
+    auto releaseRange = NormalisableRange<float>(5, 500, 1, 1);
     
     layout.add(std::make_unique<AudioParameterFloat>(ParameterID {"Release", 1},
                                                      "Release",
