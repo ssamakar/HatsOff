@@ -95,6 +95,7 @@ public:
 
     //==============================================================================
     juce::AudioProcessorEditor* createEditor() override;
+    float compressSample (float sample);
     bool hasEditor() const override;
 
     //==============================================================================
@@ -134,6 +135,14 @@ private:
     juce::AudioParameterFloat* mix { nullptr };
     
     juce::AudioParameterFloat* freq { nullptr };
+
+    juce::SmoothedValue<float> _mix;
+
+    float gainSC = 0.0f;
+    float gainSmooth = 0.0f;
+    float gainSmoothPrevious = 0.0f;
+    float currentSignal = 0.0f;
+    float gainChange_dB = 0.0f;
     
     CompressorBand compressor;
     //==============================================================================

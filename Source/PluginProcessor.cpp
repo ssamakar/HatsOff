@@ -188,7 +188,7 @@ void HatsOffAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce
 
     auto cutoff = freq->get();
     
-    const auto tan = std::tan(PI * cutoff / 48000);
+    const auto tan = std::tan(PI * cutoff / 48000); // get sample rate dynamically
     const auto a1 = (tan - 1.f) / (tan + 1.f);
     
     
@@ -205,7 +205,7 @@ void HatsOffAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce
             float output = input * -1.0; // flip polarity
             
             // compress the signal here
-
+            output = compressSample(output);
             
             const auto allPassFilteredSample = a1 * output + dnBuffer[channel];
             dnBuffer[channel] = output - a1 * allPassFilteredSample;
@@ -253,6 +253,58 @@ void HatsOffAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce
     
 //    compressor.updateCompressorSettings();
 //    compressor.process(buffer);
+}
+
+float HatsOffAudioProcessor::compressSample (float input) {
+    float _samplerate = 48000;
+    /* Initialise separate attack/release times*/
+//    auto alphaAttack = std::exp((std::log(9) * -1.0) / (_samplerate * _attack));
+    auto alphaAttack = std::exp((std::log(9) * -1.0) / (_samplerate * 0)); // immediate attack
+//    auto alphaRelease = std::exp((std::log(9) * -1.0) / (_samplerate * _release));
+    auto alphaRelease = std::exp((std::log(9) * -1.0) / (_samplerate * 0.100f));
+
+    const auto x = input;
+
+    auto x_Uni = abs(x);
+    auto x_dB = juce::Decibels::gainToDecibels(x_Uni);
+
+    if (x_dB < -96.0)
+    {
+        x_dB = -96.0;
+    }
+
+//    if (x_dB > _thresh )
+    if (x_dB > -50.0f ) // high threshold
+    {
+        gainSC = -50.0f  + (x_dB - -50.0f ) / -30.0f ;
+    }
+
+    else
+    {
+        gainSC = x_dB;
+    }
+
+    gainChange_dB = gainSC - x_dB;
+
+    if (gainChange_dB < gainSmoothPrevious)
+    {
+        gainSmooth = ((1 - alphaAttack) * gainChange_dB) + (alphaAttack * gainSmoothPrevious);
+        currentSignal = gainSmooth;
+    }
+
+    else
+    {
+        gainSmooth = ((1 - alphaRelease) * gainChange_dB) + (alphaRelease * gainSmoothPrevious);
+        currentSignal = gainSmooth;
+    }
+
+    gainSmoothPrevious = gainSmooth;
+
+    auto mix = (1.0 - .5) * x + (x * juce::Decibels::decibelsToGain(gainSmooth)) * .5;
+//    auto mix = (1.0 - _mix.getNextValue()) * x + (x * juce::Decibels::decibelsToGain(gainSmooth)) * _mix.getNextValue();
+
+    return mix;
+//    return sample;
 }
 
 //==============================================================================
