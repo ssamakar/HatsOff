@@ -106,10 +106,11 @@ void HatsOffAudioProcessor::prepareToPlay (double sampleRate, int samplesPerBloc
     
     juce::dsp::ProcessSpec spec;
     spec.maximumBlockSize = samplesPerBlock;
+    spec.sampleRate = getSampleRate();
     spec.numChannels = getTotalNumOutputChannels();
-//    spec.sampleRate = sampleRate;
-    
-    // should we prepare(spec); here?
+    _highpassModule.prepare(spec);
+    _highpassModule.setType(juce::dsp::LinkwitzRileyFilterType::highpass);
+    _highpassModule.setCutoffFrequency(freq->get());
 }
 
 void HatsOffAudioProcessor::releaseResources()
@@ -160,13 +161,8 @@ void HatsOffAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce
     
     std::vector<float> dnBuffer;
     dnBuffer.resize(buffer.getNumChannels(), 0.f);
-    const auto sign = -1.f;
-
-    auto cutoff = freq->get();
-    auto sampleRate = getSampleRate();
     
-    const auto tan = std::tan(pi * cutoff / sampleRate); // TODO: get sample rate dynamically
-    const auto a1 = (tan - 1.f) / (tan + 1.f);
+    _highpassModule.setCutoffFrequency(freq->get());
     
     for (auto channel = 0; channel < audioBlock.getNumChannels(); channel++)
     {
@@ -182,10 +178,8 @@ void HatsOffAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce
             // compress hard
             auto compressedSample = compressSample(invertedSample);
             
-            // high pass filter
-            const auto allPassFilteredSample = a1 * compressedSample + dnBuffer[channel];
-            dnBuffer[channel] = compressedSample - a1 * allPassFilteredSample;
-            const auto filterOutput = 0.5f * (compressedSample + sign * allPassFilteredSample);
+            // high pass
+            auto filterOutput = _highpassModule.processSample(channel, compressedSample);
 
             // blend
             data[sample] = (1.0 - dryWetMix) * input + dryWetMix * filterOutput;
@@ -195,6 +189,7 @@ void HatsOffAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce
 
 float HatsOffAudioProcessor::compressSample (float input) {
     auto releaseTime = release->get();
+    auto sampleRate = getSampleRate();
     auto alphaRelease = std::exp((std::log(9) * -1.0) / (sampleRate * (releaseTime / 1000)));
 
     const auto x = input;

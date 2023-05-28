@@ -92,11 +92,9 @@ public:
 
 private:
     juce::AudioParameterFloat* mix { nullptr };
-    
     juce::AudioParameterFloat* freq { nullptr };
     juce::AudioParameterFloat* release { nullptr };
-
-    juce::SmoothedValue<float> _mix;
+    juce::dsp::LinkwitzRileyFilter<float> _highpassModule;
 
     float thresh = -50.0f;
     float ratio = 30.0f;
@@ -105,7 +103,6 @@ private:
     float gainSmoothPrevious = 0.0f;
     float currentSignal = 0.0f;
     float gainChange_dB = 0.0f;
-    float sampleRate = getSampleRate();
     float pi = 3.14159265359f;
     
     //==============================================================================
