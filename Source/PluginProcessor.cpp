@@ -111,6 +111,7 @@ void HatsOffAudioProcessor::prepareToPlay (double sampleRate, int samplesPerBloc
     _highpassModule.prepare(spec);
     _highpassModule.setType(juce::dsp::LinkwitzRileyFilterType::highpass);
     _highpassModule.setCutoffFrequency(freq->get());
+    _gainModule.prepare(spec);
 }
 
 void HatsOffAudioProcessor::releaseResources()
@@ -173,16 +174,23 @@ void HatsOffAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce
             auto input = data[sample];
             
             // flip polarity
-            float invertedSample = input * -1.0;
+            float output = input * -1.0;
             
             // compress hard
-            auto compressedSample = compressSample(invertedSample);
+            output = compressSample(output);
             
             // high pass
-            auto filterOutput = _highpassModule.processSample(channel, compressedSample);
+            output = _highpassModule.processSample(channel, output);
 
             // blend
-            data[sample] = (1.0 - dryWetMix) * input + dryWetMix * filterOutput;
+            output = (1.0 - dryWetMix) * input + dryWetMix * output;
+            
+            // unity gain
+            // auto inputGain = juce::Decibels::
+            _gainModule.setGainDecibels(input);
+            output = _gainModule.processSample(output);
+            
+            data[sample] = output;
         }
     }
 }
@@ -287,7 +295,7 @@ juce::AudioProcessorValueTreeState::ParameterLayout HatsOffAudioProcessor::creat
     
     layout.add(std::make_unique<AudioParameterFloat>(ParameterID {"Freq", 1},
                                                      "LPF (hz)",
-                                                     NormalisableRange<float>(0, 20000, 1, 1),
+                                                     NormalisableRange<float>(20, 20000, 1, .2),
                                                      50));
     
     return layout;

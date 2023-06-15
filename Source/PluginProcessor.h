@@ -95,6 +95,7 @@ private:
     juce::AudioParameterFloat* freq { nullptr };
     juce::AudioParameterFloat* release { nullptr };
     juce::dsp::LinkwitzRileyFilter<float> _highpassModule;
+    juce::dsp::Gain<float> _gainModule;
 
     float thresh = -50.0f;
     float ratio = 30.0f;
